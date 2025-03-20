@@ -35,7 +35,7 @@ eprint!   会打印标准错误，错误提示信息打印
 eprintln! 可以换行的标准错误打印
 ```
 
-```
+```rust
 打印参数
 1、{0}，{1}，{2}方式。举例：println!("{0}, this is {1}. {1}, this is {0}", "Alice", "Bob");
 2、{name},{age}方式。举例：
@@ -59,6 +59,13 @@ eprintln! 可以换行的标准错误打印
 6、{number:0>width$}方式。举例：宽度可以传入变量
 		// You can use named arguments in the format specifier by appending a `$`.
     	println!("{number:0>width$}", number=1, width=5);    
+7、格式
+[[fill]align][width][type]
+    fill：填充字符（默认空格）
+    align：对齐方式（<左对齐，>右对齐，^居中）
+    width：总最小宽度
+    type：输出类型（如x表示十六进制）
+ 当fill等于0的时候，align可以不写，因为rust做了语法糖优化
 ```
 
 ## #[allow(dead_code)]
