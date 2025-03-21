@@ -70,3 +70,58 @@
 
 ```
 
+## 获取变量的字节
+
+```rust
+使用方法：std::mem::size_of_val。示例：
+fn main() {
+    // Suffixed literals, their types are known at initialization
+    let x = 1u8;
+    let y = 2u32;
+    let z = 3f32;
+
+    // Unsuffixed literals, their types depend on how they are used
+    let i = 1;
+    let f = 1.0;
+
+    // `size_of_val` returns the size of a variable in bytes
+    println!("size of `x` in bytes: {}", std::mem::size_of_val(&x));
+    println!("size of `y` in bytes: {}", std::mem::size_of_val(&y));
+    println!("size of `z` in bytes: {}", std::mem::size_of_val(&z));
+    println!("size of `i` in bytes: {}", std::mem::size_of_val(&i));
+    println!("size of `f` in bytes: {}", std::mem::size_of_val(&f));
+}
+输出：
+size of `x` in bytes: 1
+size of `y` in bytes: 4
+size of `z` in bytes: 4
+size of `i` in bytes: 4
+size of `f` in bytes: 8
+```
+
+##  可增长数组
+
+```rust
+1、定义：
+	// Create an empty vector (a growable array).
+    let mut vec = Vec::new();
+2、存放数据：
+// Insert `elem` in the vector.
+    vec.push(elem);
+3、打印数据：
+	println!("{:?}", vec);
+输出：[5]
+```
+
+## 通过type定义别名
+
+```rust
+1、别名需要驼峰命名法。示例：
+// `NanoSecond`, `Inch`, and `U64` are new names for `u64`.
+type NanoSecond = u64;
+type Inch = u64;
+type U64 = u64;
+2、主要作用是减少样板。如
+The main use of aliases is to reduce boilerplate; for example the io::Result<T> type is an alias for the Result<T, io::Error> type.
+```
+
