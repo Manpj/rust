@@ -591,3 +591,238 @@ fn main() {
 }
 ```
 
+## start..end
+
+```rust
+1、start..end：表示包含起始值 start，但不包含结束值 end。例如，1..5 表示 1、2、3、4。
+2、start..表示包含起始值 start，并且可以无限延伸到该类型的最大值。例如，1.. 表示从 1 开始到该类型所能表示的最大值的所有值。
+3、start..=end：表示包含起始值 start，包含结束值 end。例如，1..=5 表示 1、2、3、4、5
+```
+
+## match 绑定
+
+```rust
+使用符号@：将匹配到的值绑定到变量
+示例1：
+// A function `age` which returns a `u32`.
+fn age() -> u32 {
+    15
+}
+
+fn main() {
+    println!("Tell me what type of person you are");
+
+    match age() {
+        0             => println!("I haven't celebrated my first birthday yet"),
+        // Could `match` 1 ..= 12 directly but then what age
+        // would the child be? Instead, bind to `n` for the
+        // sequence of 1 ..= 12. Now the age can be reported.
+        n @ 1  ..= 12 => println!("I'm a child of age {:?}", n),
+        n @ 13 ..= 19 => println!("I'm a teen of age {:?}", n),
+        // Nothing bound. Return the result.
+        n             => println!("I'm an old person of age {:?}", n),
+    }
+}
+示例2：
+fn some_number() -> Option<u32> {
+    Some(42)
+}
+
+fn main() {
+    match some_number() {
+        // Got `Some` variant, match if its value, bound to `n`,
+        // is equal to 42.
+        Some(n @ 42) => println!("The Answer: {}!", n),
+        // Match any other number.
+        Some(n)      => println!("Not interesting... {}", n),
+        // Match anything else (`None` variant).
+        _            => (),
+    }
+}
+注：
+Some(n)没有使用@绑定是因为：不需要验证值（接受任何值），直接绑定到 n（无额外条件）；
+Some(n @ 42)：使用@，是因为先验证值是42，为了使用42，将42绑定到变量n中。
+```
+
+## if  let
+
+```rust
+1、if let 相比match的优势：match表达式要求穷尽所有可能的模式，所以即使只关心一个变体，也要添加_模式处理，会造成代码空间的浪费。
+2、if let 也支持 else 和 else if,示例：
+fn main() {
+    // All have type `Option<i32>`
+    let number = Some(7);
+    let letter: Option<i32> = None;
+    let emoticon: Option<i32> = None;
+
+    // The `if let` construct reads: "if `let` destructures `number` into
+    // `Some(i)`, evaluate the block (`{}`).
+    if let Some(i) = number {
+        println!("Matched {:?}!", i);
+    }
+
+    // If you need to specify a failure, use an else:
+    if let Some(i) = letter {
+        println!("Matched {:?}!", i);
+    } else {
+        // Destructure failed. Change to the failure case.
+        println!("Didn't match a number. Let's go with a letter!");
+    }
+
+    // Provide an altered failing condition.
+    let i_like_letters = false;
+
+    if let Some(i) = emoticon {
+        println!("Matched {:?}!", i);
+    // Destructure failed. Evaluate an `else if` condition to see if the
+    // alternate failure branch should be taken:
+    } else if i_like_letters {
+        println!("Didn't match a number. Let's go with a letter!");
+    } else {
+        // The condition evaluated false. This branch is the default:
+        println!("I don't like letters. Let's go with an emoticon :)!");
+    }
+}
+3、任意枚举 使用示例：
+// Our example enum
+enum Foo {
+    Bar,
+    Baz,
+    Qux(u32)
+}
+
+fn main() {
+    // Create example variables
+    let a = Foo::Bar;
+    let b = Foo::Baz;
+    let c = Foo::Qux(100);
+    
+    // Variable a matches Foo::Bar
+    if let Foo::Bar = a {
+        println!("a is foobar");
+    }
+    
+    // Variable b does not match Foo::Bar
+    // So this will print nothing
+    if let Foo::Bar = b {
+        println!("b is foobar");
+    }
+    
+    // Variable c matches Foo::Qux which has a value
+    // Similar to Some() in the previous example
+    if let Foo::Qux(value) = c {
+        println!("c is {}", value);
+    }
+
+    // Binding also works with `if let`
+    if let Foo::Qux(value @ 100) = c {
+        println!("c is one hundred");
+    }
+}
+4、== 比较依赖 PartialEq。而if let 基于模式匹配，示例：如下代码会报错，因为==没有实现。
+// This enum purposely neither implements nor derives PartialEq.
+// That is why comparing Foo::Bar == a fails below.
+enum Foo {Bar}
+
+fn main() {
+    let a = Foo::Bar;
+
+    // Variable a matches Foo::Bar
+    if Foo::Bar == a {
+    // ^-- this causes a compile-time error. Use `if let` instead.
+        println!("a is foobar");
+    }
+}
+```
+
+## print 和 panic
+
+```rust
+print!宏主要用于正常的信息输出，程序会继续执行；
+panic!宏用于处理严重错误，会终止程序的执行。
+```
+
+## let-else
+
+```rust
+1、rust 1.65引入新增的功能。let-else语法允许在模式匹配失败时候执行特定的发散操作(如break、return、panic!等)。在 Rust 1.65 引入 let-else 语法之前，若要处理模式匹配失败的情况并在匹配成功时绑定变量，需要借助 match 或 if let 表达式，不过这会带来代码重复和作用域管理的问题。
+示例1：
+use std::str::FromStr;
+
+fn get_count_item(s: &str) -> (u64, &str) {
+    let mut it = s.split(' ');
+    let (Some(count_str), Some(item)) = (it.next(), it.next()) else {
+        panic!("Can't segment count item pair: '{s}'");
+    };
+    let Ok(count) = u64::from_str(count_str) else {
+        panic!("Can't parse integer: '{count_str}'");
+    };
+    (count, item)
+}
+
+fn main() {
+    assert_eq!(get_count_item("3 chairs"), (3, "chairs"));
+}
+示例2：在没有let-else之前，的实现方式。
+    let (count_str, item) = match (it.next(), it.next()) {
+        (Some(count_str), Some(item)) => (count_str, item),
+        _ => panic!("Can't segment count item pair: '{s}'"),
+    };
+    let count = if let Ok(count) = u64::from_str(count_str) {
+        count
+    } else {
+        panic!("Can't parse integer: '{count_str}'");
+    };
+
+```
+
+## while let
+
+```rust
+while let 可以简化loop和 match处理值时，代码变的复杂和繁琐的问题，while let可以简化这种情况。示例：
+未使用while let：
+// Make `optional` of type `Option<i32>`
+let mut optional = Some(0);
+
+// Repeatedly try this test.
+loop {
+    match optional {
+        // If `optional` destructures, evaluate the block.
+        Some(i) => {
+            if i > 9 {
+                println!("Greater than 9, quit!");
+                optional = None;
+            } else {
+                println!("`i` is `{:?}`. Try again.", i);
+                optional = Some(i + 1);
+            }
+            // ^ Requires 3 indentations!
+        },
+        // Quit the loop when the destructure fails:
+        _ => { break; }
+        // ^ Why should this be required? There must be a better way!
+    }
+}
+使用while let：
+fn main() {
+    // Make `optional` of type `Option<i32>`
+    let mut optional = Some(0);
+    
+    // This reads: "while `let` destructures `optional` into
+    // `Some(i)`, evaluate the block (`{}`). Else `break`.
+    while let Some(i) = optional {
+        if i > 9 {
+            println!("Greater than 9, quit!");
+            optional = None;
+        } else {
+            println!("`i` is `{:?}`. Try again.", i);
+            optional = Some(i + 1);
+        }
+        // ^ Less rightward drift and doesn't require
+        // explicitly handling the failing case.
+    }
+    // ^ `if let` had additional optional `else`/`else if`
+    // clauses. `while let` does not have these.
+}
+```
+
