@@ -455,3 +455,341 @@ fn main() {
 }
 ```
 
+## where关键字
+
+```rust
+1、where关键字用于为泛型类型参数指定约束条件，它能让代码的类型约束表达更加清晰和灵活，特别实在约束条件较为复杂时优势明显。
+示例：
+// A function which takes a closure as an argument and calls it.
+// <F> denotes that F is a "Generic type parameter"
+fn apply<F>(f: F) where
+    // The closure takes no input and returns nothing.
+    F: FnOnce() {
+    // ^ TODO: Try changing this to `Fn` or `FnMut`.
+
+    f();
+}
+where 子句：where F: FnOnce() 为泛型类型参数 F 设定了约束条件。它要求 F 必须实现 FnOnce() 特征。FnOnce() 是一个闭包特征，代表该闭包不接受任何参数，也不返回任何值，并且闭包可以获取捕获变量的所有权（也就是通过值捕获）
+
+// A function which takes a closure and returns an `i32`.
+fn apply_to_3<F>(f: F) -> i32 where
+    // The closure takes an `i32` and returns an `i32`.
+    F: Fn(i32) -> i32 {
+
+    f(3)
+}
+where 的作用：借助 where 子句，我们清晰地规定了传入 apply 函数的参数 f 必须是一个满足 FnOnce() 特征的闭包。如果不使用 where 子句，也可以把约束直接写在泛型类型参数后面，像 fn apply<F: FnOnce()>(f: F) 这样，但当约束条件变复杂时，使用 where 子句能让代码更易读。
+```
+
+## 字符串操作
+
+```rust
+1、let mut farewell = "goodbye".to_owned();
+解释：
+>"goodbye"：这是一个字符串字面量，在 Rust 里，字符串字面量的类型是 &'static str。它是一种不可变的字符串切片，存储在程序的只读内存区域，拥有静态生命周期（'static）.
+>.to_owned()：这是 str 类型提供的一个方法，其作用是将一个不可变的字符串切片（&str）转换为一个拥有所有权的 String 类型。String 类型是可增长的、可变的字符串，它会在堆上分配内存来存储字符串数据.
+>let mut farewell：这里使用 let 关键字声明了一个变量 farewell，并且使用 mut 关键字将其标记为可变的。这意味着后续可以对 farewell 进行修改操作.
+2、farewell.push_str("!!!");
+>push_str 方法：这是 String 类型提供的一个方法，用于在 String 类型的字符串末尾追加一个字符串切片（&str）。push_str 方法不会获取传入字符串切片的所有权，只是将其内容复制到 String 类型的字符串末尾。
+>"!!!"：这是一个字符串字面量，类型为 &'static str，作为参数传递给 push_str 方法。
+```
+
+## &mut
+
+```rust
+表示可变引用
+```
+
+## 函数使用闭包作为参数  与 Fn、FnMut、FnOnce特性
+
+```rust
+1、函数使用闭包作为参数
+示例：
+// A function which takes a closure as an argument and calls it.
+// <F> denotes that F is a "Generic type parameter"
+fn apply<F>(mut f: F) where
+    // The closure takes no input and returns nothing.
+    F: FnMut() {
+    // ^ TODO: Try changing this to `Fn` or `FnMut`.
+
+    f();
+}
+
+// A function which takes a closure and returns an `i32`.
+fn apply_to_3<F>(f: F) -> i32 where
+    // The closure takes an `i32` and returns an `i32`.
+    F: Fn(i32) -> i32 {
+
+    f(3)
+}
+
+fn main() {
+    use std::mem;
+
+    let greeting = "hello";
+    // A non-copy type.
+    // `to_owned` creates owned data from borrowed one
+    let mut farewell = "goodbye".to_owned();
+
+    // Capture 2 variables: `greeting` by reference and
+    // `farewell` by value.
+    let mut diary = || {
+        // `greeting` is by reference: requires `Fn`.
+        println!("I said {}.", greeting);
+
+        // Mutation forces `farewell` to be captured by
+        // mutable reference. Now requires `FnMut`.
+        farewell.push_str("!!!");
+        println!("Then I screamed {}.", farewell);
+        println!("Now I can sleep. zzzzz");
+
+        // Manually calling drop forces `farewell` to
+        // be captured by value. Now requires `FnOnce`.
+        mem::drop(&farewell);
+    };
+
+    // Call the function which applies the closure.
+    apply(&mut diary);
+
+    // `double` satisfies `apply_to_3`'s trait bound
+    let double = |x| 2 * x;
+
+    println!("3 doubled: {}", apply_to_3(double));
+}
+2、Fn、FnMut、FnOnce
+>Fn：当一个闭包实现了 Fn 特征时，它通过不可变引用（&T）来使用捕获的变量。这意味着闭包可以读取捕获的变量，但不能修改它们。
+>FnMut:实现 FnMut 特征的闭包通过可变引用（&mut T）来使用捕获的变量。这意味着闭包可以修改捕获的变量.
+>FnOnce:实现 FnOnce 特征的闭包通过值（T）来使用捕获的变量。这意味着闭包会获取捕获变量的所有权。
+```
+
+## 函数也可输入作为参数
+
+```rust
+函数也可以和闭包一样，作为函数的入参。示例：
+// Define a function which takes a generic `F` argument
+// bounded by `Fn`, and calls it
+fn call_me<F: Fn()>(f: F) {
+    f();
+}
+
+// Define a wrapper function satisfying the `Fn` bound
+fn function() {
+    println!("I'm a function!");
+}
+
+fn main() {
+    // Define a closure satisfying the `Fn` bound
+    let closure = || println!("I'm a closure!");
+
+    call_me(closure);
+    call_me(function);
+}
+```
+
+## Fn、FnMut、FnOnce作为输出类型
+
+```rust
+1、必须使用move，获取所有权。保证闭包的独立性。
+当函数返回闭包时，闭包可能会在函数返回之后才被调用。要是闭包以引用的方式捕获外部变量，那么当函数返回时，外部变量可能已经离开了作用域，从而导致悬垂引用。借助 move 关键字，闭包能够获取外部变量的所有权，这样即便外部作用域结束，闭包依然可以安全地使用这些变量。
+示例：
+fn create_fn() -> impl Fn() {
+    let text = "Fn".to_owned();
+
+    move || println!("This is a: {}", text)
+}
+
+fn create_fnmut() -> impl FnMut() {
+    let text = "FnMut".to_owned();
+
+    move || println!("This is a: {}", text)
+}
+
+fn create_fnonce() -> impl FnOnce() {
+    let text = "FnOnce".to_owned();
+
+    move || println!("This is a: {}", text)
+}
+
+fn main() {
+    let fn_plain = create_fn();
+    let mut fn_mut = create_fnmut();
+    let fn_once = create_fnonce();
+
+    fn_plain();
+    fn_mut();
+    fn_once();
+}
+输出：
+This is a: Fn
+This is a: FnMut
+This is a: FnOnce
+```
+
+## Vec<T>
+
+```rust
+1、它是一个动态数组，也被叫做可增长数组或者向量.
+Vec<T> 是一个标准库类型，其作用是在堆上存储一系列相同类型的元素。它的大小可以在运行时动态改变，这意味着你能够随时添加或者移除元素。
+2、vec1.iter() 借用元素，不会获取元素的所有权
+3、vec2.into_iter() 直接获取值，会获取所有权
+```
+
+## Iterator
+
+```rust
+Iterator源码中使用的any方法，支持传入闭包。源码如下：
+pub trait Iterator {
+    // The type being iterated over.
+    type Item;
+
+    // `any` takes `&mut self` meaning the caller may be borrowed
+    // and modified, but not consumed.
+    fn any<F>(&mut self, f: F) -> bool where
+        // `FnMut` meaning any captured variable may at most be
+        // modified, not consumed. `Self::Item` states it takes
+        // arguments to the closure by value.
+        F: FnMut(Self::Item) -> bool;
+}
+
+使用：
+fn main() {
+    let vec1 = vec![1, 2, 3];
+    let vec2 = vec![4, 5, 6];
+
+    // `iter()` for vecs yields `&i32`. Destructure to `i32`.
+    println!("2 in vec1: {}", vec1.iter()     .any(|&x| x == 2));
+    // `into_iter()` for vecs yields `i32`. No destructuring required.
+    println!("2 in vec2: {}", vec2.into_iter().any(|x| x == 2));
+
+    // `iter()` only borrows `vec1` and its elements, so they can be used again
+    println!("vec1 len: {}", vec1.len());
+    println!("First element of vec1 is: {}", vec1[0]);
+    // `into_iter()` does move `vec2` and its elements, so they cannot be used again
+    // println!("First element of vec2 is: {}", vec2[0]);
+    //println!("vec2 len: {}", vec2.len());
+    // TODO: uncomment two lines above and see compiler errors.
+
+    let array1 = [1, 2, 3];
+    let array2 = [4, 5, 6];
+
+    // `iter()` for arrays yields `&i32`.
+    println!("2 in array1: {}", array1.iter()     .any(|&x| x == 2));
+    // `into_iter()` for arrays yields `i32`.
+    println!("2 in array2: {}", array2.into_iter().any(|x| x == 2));
+}
+```
+
+## iterators find 方法
+
+```rust
+find方法使用闭包参数源码
+pub trait Iterator {
+    // The type being iterated over.
+    type Item;
+
+    // `find` takes `&mut self` meaning the caller may be borrowed
+    // and modified, but not consumed.
+    fn find<P>(&mut self, predicate: P) -> Option<Self::Item> where
+        // `FnMut` meaning any captured variable may at most be
+        // modified, not consumed. `&Self::Item` states it takes
+        // arguments to the closure by reference.
+        P: FnMut(&Self::Item) -> bool;
+}
+使用：
+fn main() {
+    let vec1 = vec![1, 2, 3];
+    let vec2 = vec![4, 5, 6];
+
+    // `iter()` for vecs yields `&i32`.
+    let mut iter = vec1.iter();
+    // `into_iter()` for vecs yields `i32`.
+    let mut into_iter = vec2.into_iter();
+
+    // `iter()` for vecs yields `&i32`, and we want to reference one of its
+    // items, so we have to destructure `&&i32` to `i32`
+    println!("Find 2 in vec1: {:?}", iter     .find(|&&x| x == 2));
+    // `into_iter()` for vecs yields `i32`, and we want to reference one of
+    // its items, so we have to destructure `&i32` to `i32`
+    println!("Find 2 in vec2: {:?}", into_iter.find(| &x| x == 2));
+
+    let array1 = [1, 2, 3];
+    let array2 = [4, 5, 6];
+
+    // `iter()` for arrays yields `&&i32`
+    println!("Find 2 in array1: {:?}", array1.iter()     .find(|&&x| x == 2));
+    // `into_iter()` for arrays yields `&i32`
+    println!("Find 2 in array2: {:?}", array2.into_iter().find(|&x| x == 2));
+}
+注意：|&&x| x部分，可以理解成|&x| *x
+
+Iterator::position 使用示例：
+fn main() {
+    let vec = vec![1, 9, 3, 3, 13, 2];
+
+    // `iter()` for vecs yields `&i32` and `position()` does not take a reference, so
+    // we have to destructure `&i32` to `i32`
+    let index_of_first_even_number = vec.iter().position(|&x| x % 2 == 0);
+    assert_eq!(index_of_first_even_number, Some(5));
+    
+    // `into_iter()` for vecs yields `i32` and `position()` does not take a reference, so
+    // we do not have to destructure    
+    let index_of_first_negative_number = vec.into_iter().position(|x| x < 0);
+    assert_eq!(index_of_first_negative_number, None);
+}
+```
+
+## 函数式方法
+
+```rust
+函数式方法和命令式方法使用示例：
+fn is_odd(n: u32) -> bool {
+    n % 2 == 1
+}
+
+fn main() {
+    println!("Find the sum of all the numbers with odd squares under 1000");
+    let upper = 1000;
+
+    // Imperative approach
+    // Declare accumulator variable
+    let mut acc = 0;
+    // Iterate: 0, 1, 2, ... to infinity
+    for n in 0.. {
+        // Square the number
+        let n_squared = n * n;
+
+        if n_squared >= upper {
+            // Break loop if exceeded the upper limit
+            break;
+        } else if is_odd(n_squared) {
+            // Accumulate value, if it's odd
+            acc += n_squared;
+        }
+    }
+    println!("imperative style: {}", acc);
+
+    // Functional approach
+    let sum_of_squared_odd_numbers: u32 =
+        (0..).map(|n| n * n)                             // All natural numbers squared
+             .take_while(|&n_squared| n_squared < upper) // Below upper limit
+             .filter(|&n_squared| is_odd(n_squared))     // That are odd
+             .sum();                                     // Sum them
+    println!("functional style: {}", sum_of_squared_odd_numbers);
+}
+
+类似于java8中的函数式方法。
+使用的方法也需要学习一下。
+```
+
+## 发散函数
+
+```rust
+1、示例:
+fn foo() -> ! {
+    panic!("This call never returns.");
+}
+!代表空类型
+2、和()元组类型有区别，（）类型可以实例化，
+3、用处，比如continue、loop {}、exit()等不需要返回的函数，提供了一个类型。
+```
+
